@@ -5,3 +5,6 @@ langchain-google-genai
 langchain-core
 pydantic
 python-dotenv
+gspread 
+oauth2client
+groq

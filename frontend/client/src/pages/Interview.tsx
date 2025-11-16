@@ -15,11 +15,15 @@ import {
   Headphones,
   Loader2,
 } from "lucide-react";
+import Results from './Results';
 
 const API_BASE_URL = "http://127.0.0.1:8000/api";
+const TOTAL_QUESTIONS = 2;
 
 export default function VoxHireApp() {
   const [showInterview, setShowInterview] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [resultsSessionId, setResultsSessionId] = useState("");
   const [userDetails, setUserDetails] = useState({
     name: "",
     email: "",
@@ -36,7 +40,8 @@ export default function VoxHireApp() {
       setShowInterview(true);
     } catch (error) {
       console.error("Failed to start session:", error);
-      alert("Failed to connect to backend. Make sure the server is running at http://127.0.0.1:8000");
+      // Use a less intrusive error message
+      console.error("Failed to connect to backend. Make sure the server is running at http://127.0.0.1:8000");
     }
   };
 
@@ -52,6 +57,25 @@ export default function VoxHireApp() {
           setShowInterview(false);
           setSessionId("");
         }}
+        onFinishInterview={(finalSessionId) => {
+          setShowInterview(false);
+          setResultsSessionId(finalSessionId);
+          setShowResults(true);
+        }}
+      />
+    );
+  }
+
+  if (showResults) {
+    return (
+      <Results
+        sessionId={resultsSessionId}
+        onBack={() => setShowResults(false)}
+        name={userDetails.name}
+        email={userDetails.email}
+        photo={userDetails.photo}
+        role={userDetails.role}
+        totalQuestions={TOTAL_QUESTIONS}
       />
     );
   }
@@ -65,6 +89,7 @@ export default function VoxHireApp() {
   );
 }
 
+// --- SetupPage (No changes) ---
 function SetupPage({
   userDetails,
   setUserDetails,
@@ -74,6 +99,8 @@ function SetupPage({
   setUserDetails: (details: any) => void;
   onStart: () => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -85,17 +112,24 @@ function SetupPage({
     }
   };
 
+  const showCustomAlert = (message: string) => {
+
+    console.warn("Validation Error:", message);
+    
+    alert(message); // Re-adding alert as per original code, but modal is preferred
+  };
+
   const handleStartInterview = () => {
     if (!userDetails.name.trim()) {
-      alert("Please enter your name");
+      showCustomAlert("Please enter your name");
       return;
     }
     if (!userDetails.email.trim()) {
-      alert("Please enter your email");
+      showCustomAlert("Please enter your email");
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDetails.email)) {
-      alert("Please enter a valid email address");
+      showCustomAlert("Please enter a valid email address");
       return;
     }
     onStart();
@@ -104,7 +138,7 @@ function SetupPage({
   const roleLabel = userDetails.role.charAt(0).toUpperCase() + userDetails.role.slice(1).replace(/([A-Z])/g, " $1");
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen bg-neutral-950 text-white font-sans">
       <header className="sticky top-0 z-20 backdrop-blur bg-neutral-950/90 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -144,11 +178,14 @@ function SetupPage({
                       <User className="h-8 w-8 text-neutral-500" />
                     )}
                   </div>
-                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                  >
                     <Upload className="h-4 w-4" />
                     <span className="text-sm">Upload Photo</span>
-                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-                  </label>
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} ref={fileInputRef} className="hidden" />
+                  </button>
                 </div>
               </div>
 
@@ -199,8 +236,10 @@ function SetupPage({
                   >
                     <option value="frontend">Front-End Developer</option>
                     <option value="datascience">Data Scientist</option>
+                    <option value="Data Analytics">Data Analytics</option>
                     <option value="product">Product Manager</option>
                     <option value="devops">DevOps Engineer</option>
+                    
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
                 </div>
@@ -233,19 +272,6 @@ function SetupPage({
           </button>
         </div>
 
-        <div className="mt-12 rounded-xl border border-white/10 overflow-hidden">
-          <img
-            src="https://images.unsplash.com/photo-1526925539332-aa3b66e35444?q=80&w=1640&auto=format&fit=crop"
-            alt="Interview"
-            className="w-full h-48 object-cover opacity-80"
-          />
-          <div className="p-6 bg-white/5">
-            <h3 className="text-lg font-semibold">Voice-first, AI-powered</h3>
-            <p className="text-sm text-neutral-400 mt-2">
-              Speak your answer, get AI transcription, and let Synthia ask intelligent follow-ups.
-            </p>
-          </div>
-        </div>
       </main>
 
       <footer className="max-w-7xl mx-auto px-6 py-8 border-t border-white/10 text-sm text-neutral-500">
@@ -268,6 +294,7 @@ function InterviewPage({
   role,
   sessionId,
   onBack,
+  onFinishInterview
 }: {
   name: string;
   email: string;
@@ -275,6 +302,7 @@ function InterviewPage({
   role: string;
   sessionId: string;
   onBack: () => void;
+  onFinishInterview: (sessionId: string) => void;
 }) {
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [isFirstQuestion, setIsFirstQuestion] = useState(true);
@@ -285,18 +313,26 @@ function InterviewPage({
   const [totalSeconds, setTotalSeconds] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [interviewComplete, setInterviewComplete] = useState(false);
+  const [questionCount, setQuestionCount] = useState(0); 
 
   const recognitionRef = useRef<any>(null);
   const intervalIdRef = useRef<number | null>(null);
 
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1).replace(/([A-Z])/g, " $1");
 
+ 
+  const showCustomAlert = (message: string) => {
+    console.warn("Alert:", message);
+ 
+    alert(message); 
+  };
+
   // Initialize speech recognition
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      alert("Speech recognition not supported in this browser. Please use Chrome or Edge.");
+      showCustomAlert("Speech recognition not supported in this browser. Please use Chrome or Edge.");
       return;
     }
 
@@ -319,9 +355,10 @@ function InterviewPage({
       }
 
       setTranscript((prev) => {
-        const newTranscript = prev + finalTranscript;
-        return newTranscript;
+     
+        return prev + finalTranscript;
       });
+
     };
 
     recognition.onerror = (event: any) => {
@@ -331,10 +368,11 @@ function InterviewPage({
       } else {
         setStatusText(`Error: ${event.error}`);
       }
-      stopRecording();
+      stopRecording(); // Stop on error
     };
 
     recognition.onend = () => {
+     
       if (isRecording) {
         setIsRecording(false);
         setStatusText('Recording stopped');
@@ -354,13 +392,13 @@ function InterviewPage({
         clearInterval(intervalIdRef.current);
       }
     };
-  }, []);
+  }, []); // Empty dependency array, runs once
 
   const getFirstQuestion = () => {
-  setCurrentQuestion("Introduce yourself.");
-  setIsFirstQuestion(true);
-};
-
+    setCurrentQuestion("Introduce yourself.");
+    setIsFirstQuestion(true);
+    // Don't set processing, it's immediate
+  };
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60).toString().padStart(2, "0");
@@ -370,7 +408,7 @@ function InterviewPage({
 
   const startRecording = () => {
     if (!recognitionRef.current) {
-      alert("Speech recognition not available");
+      showCustomAlert("Speech recognition not available");
       return;
     }
 
@@ -378,6 +416,7 @@ function InterviewPage({
     setTotalSeconds(0);
     setIsRecording(true);
     setStatusText("Recording... Speak now");
+    setSubmitted(false); // Allow recording new answer
     
     try {
       recognitionRef.current.start();
@@ -387,8 +426,8 @@ function InterviewPage({
       }, 1000);
     } catch (error) {
       console.error('Failed to start recording:', error);
-      alert('Failed to start recording. Please try again.');
-      stopRecording();
+      showCustomAlert('Failed to start recording. Please try again.');
+      stopRecording(); // Clean up if start failed
     }
   };
 
@@ -419,11 +458,12 @@ function InterviewPage({
 
   const submitAnswer = async () => {
     if (!transcript.trim()) {
-      alert("Please record an answer before submitting.");
+      showCustomAlert("Please record an answer before submitting.");
       return;
     }
 
     setIsProcessing(true);
+    setSubmitted(true); // Lock submit button
     setStatusText("Submitting...");
 
     try {
@@ -434,9 +474,25 @@ function InterviewPage({
         body: JSON.stringify({
           question: currentQuestion,
           answer: transcript,
-          session_id: sessionId
+          session_id: sessionId,
+          name: name,
+          email: email,
+          role: role
         })
       });
+
+      // --- MODIFIED: Increment question count and check limit ---
+      const newQuestionCount = questionCount + 1;
+      setQuestionCount(newQuestionCount);
+
+      // Check if this was the last question
+      if (newQuestionCount >= TOTAL_QUESTIONS) {
+        setInterviewComplete(true);
+        setStatusText("Interview complete!");
+        setIsProcessing(false); // Stop processing
+        return; // Stop here, don't fetch another question
+      }
+      // --- End Modification ---
 
       // Get next question
       const response = await fetch(`${API_BASE_URL}/chat`, {
@@ -458,24 +514,36 @@ function InterviewPage({
         setInterviewComplete(true);
         setStatusText("Interview complete!");
       } else {
+        // Reset everything for next question
         setCurrentQuestion(data.question);
         setTranscript("");
         setTotalSeconds(0);
         setSubmitted(false);
-        setStatusText("Ready for next question");
+        setIsRecording(false);
+        setStatusText("Ready to record");
+        setIsFirstQuestion(false);
+        
+        // Ensure speech recognition is stopped and ready for next recording
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+          } catch (error) {
+            // Ignore errors if already stopped
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to submit answer:', error);
-      alert('Failed to submit answer. Please try again.');
+      showCustomAlert('Failed to submit answer. Please try again.');
       setStatusText("Error submitting");
+      setSubmitted(false); // Allow resubmission on error
     } finally {
       setIsProcessing(false);
-      setSubmitted(true);
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen bg-neutral-950 text-white font-sans">
       <header className="sticky top-0 z-20 backdrop-blur bg-neutral-950/90 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -517,98 +585,101 @@ function InterviewPage({
           </div>
         </div>
 
-        {isProcessing && !currentQuestion ? (
+        {isProcessing && !currentQuestion && !interviewComplete ? (
           <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-indigo-400" />
             <p className="text-neutral-400">Preparing your interview...</p>
           </div>
         ) : (
           <>
-            <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
-              <div className="p-5 border-b border-white/10">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="px-2.5 py-1 rounded-full text-xs border border-white/10 bg-white/5">
-                    {isFirstQuestion ? "Introduction" : "Follow-up"}
-                  </span>
-                  <span className="text-xs text-neutral-500">Voice answer</span>
-                </div>
-                <h3 className="text-xl md:text-2xl font-semibold">{currentQuestion}</h3>
-              </div>
-
-              <div className="p-5 space-y-4">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <button
-                    onClick={startRecording}
-                    disabled={isRecording || submitted || isProcessing}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-indigo-500/30 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <Mic className="h-4 w-4" />
-                    <span className="text-sm font-medium">Start Recording</span>
-                  </button>
-                  <button
-                    onClick={stopRecording}
-                    disabled={!isRecording}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <StopCircle className="h-4 w-4" />
-                    <span className="text-sm">Stop</span>
-                  </button>
-                  <button
-                    onClick={retake}
-                    disabled={!transcript || isRecording}
-                    className="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    <span className="text-sm">Retake</span>
-                  </button>
-                </div>
-
-                <div className="h-16 rounded-lg border border-white/10 bg-neutral-950/60 flex items-center px-3">
-                  <div className="flex-1 flex items-end gap-1 h-12">
-                    {[...Array(10)].map((_, i) => (
-                      <span
-                        key={i}
-                        className={`w-1.5 rounded ${isRecording ? "bg-indigo-500/60 animate-pulse" : "bg-indigo-500/20"}`}
-                        style={{ height: `${20 + Math.random() * 60}%`, animationDelay: `${i * 100}ms` }}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-xs text-neutral-400 ml-3">{statusText}</span>
-                </div>
-
-                {transcript && (
-                  <div className="rounded-lg border border-white/10 bg-neutral-950/60 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Headphones className="h-4 w-4 text-neutral-300" />
-                        <span className="text-sm text-neutral-300">Transcription</span>
-                      </div>
-                      <span className="text-xs text-neutral-500">{transcript.split(' ').length} words</span>
-                    </div>
-                    <div className="max-h-40 overflow-y-auto text-sm text-neutral-200 leading-relaxed">
-                      {transcript}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={submitAnswer}
-                    disabled={!transcript || submitted || isProcessing || isRecording}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-emerald-500/30 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isProcessing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                    <span className="text-sm font-medium">
-                      {isProcessing ? "Processing..." : "Submit Answer"}
+            {/* --- MODIFIED: Hide question block when complete --- */}
+            {!interviewComplete && (
+              <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
+                <div className="p-5 border-b border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2.5 py-1 rounded-full text-xs border border-white/10 bg-white/5">
+                      Question {questionCount + 1} / {TOTAL_QUESTIONS}
                     </span>
-                  </button>
+                    <span className="text-xs text-neutral-500">Voice answer</span>
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-semibold">{currentQuestion}</h3>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      onClick={startRecording}
+                      disabled={isRecording || submitted || isProcessing}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-indigo-500/30 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Mic className="h-4 w-4" />
+                      <span className="text-sm font-medium">Start Recording</span>
+                    </button>
+                    <button
+                      onClick={stopRecording}
+                      disabled={!isRecording}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <StopCircle className="h-4 w-4" />
+                      <span className="text-sm">Stop</span>
+                    </button>
+                    <button
+                      onClick={retake}
+                      disabled={!transcript || isRecording || submitted}
+                      className="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      <span className="text-sm">Retake</span>
+                    </button>
+                  </div>
+
+                  <div className="h-16 rounded-lg border border-white/10 bg-neutral-950/60 flex items-center px-3">
+                    <div className="flex-1 flex items-end gap-1 h-12">
+                      {[...Array(20)].map((_, i) => ( // Increased bars for effect
+                        <span
+                          key={i}
+                          className={`w-1.5 rounded ${isRecording ? "bg-indigo-500/60 animate-pulse" : "bg-indigo-500/20"}`}
+                          style={{ height: `${isRecording ? (10 + Math.random() * 80) : 10}%`, transition: 'height 0.2s', animationDelay: `${i * 50}ms` }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-neutral-400 ml-3">{statusText}</span>
+                  </div>
+
+                  {transcript && (
+                    <div className="rounded-lg border border-white/10 bg-neutral-950/60 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Headphones className="h-4 w-4 text-neutral-300" />
+                          <span className="text-sm text-neutral-300">Transcription</span>
+                        </div>
+                        <span className="text-xs text-neutral-500">{transcript.trim().split(' ').length} words</span>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto text-sm text-neutral-200 leading-relaxed">
+                        {transcript}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={submitAnswer}
+                      disabled={!transcript || submitted || isProcessing || isRecording}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-emerald-500/30 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isProcessing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                      <span className="text-sm font-medium">
+                        {isProcessing ? "Processing..." : "Submit Answer"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {interviewComplete && (
               <div className="rounded-xl border border-white/10 bg-white/5 p-6">
@@ -621,6 +692,13 @@ function InterviewPage({
                     <p className="text-sm text-neutral-400 mt-1">
                       Thank you, {name}! Your responses have been saved. Check interview_log.csv for the full transcript.
                     </p>
+                    {/* --- ADDED: Button to go back to main screen --- */}
+                    <button
+                      onClick={() => onFinishInterview(sessionId)}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-indigo-500/30 bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors"
+                    >
+                      Finish Interview
+                    </button>
                   </div>
                 </div>
               </div>

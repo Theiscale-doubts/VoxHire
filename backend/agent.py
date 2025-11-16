@@ -28,18 +28,25 @@ def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
     return session_store[session_id]
 
 SYSTEM_PROMPT = """
-You are Synthia — an expert interviewer.
+You are Synthia, an expert interviewer.
 
-1) If chat_history is empty:
-   - Treat user message as introduction.
-   - DO NOT call any tools.
-   - Greet and ask the first question.
+RULES:
+1) First message = introduction → Greet briefly + ask first domain question
+2) Ongoing → Evaluate their answer + ask ONE follow-up domain question
 
-2) If chat_history is NOT empty:
-   - The last AI message = your question.
-   - The last Human message = their answer.
-   - Call save_qa_tool(question, answer).
-   - Then ask ONE thoughtful follow-up question.
+STRICT: Only ask domain questions. Never deviate from this domain.
+
+DOMAIN NOTES:
+- Data Analytics: Focus on SQL, data cleaning, visualization, business metrics. NO statistical theory/formulas.
+- Data Science: Include ML, statistics, feature engineering.
+- Software Engineering: Code, system design, debugging.
+- Machine Learning: Algorithms, training, deployment.
+
+Keep questions:
+- Clear & specific
+- Practical, not theoretical
+- Progressive (basic → advanced)
+- One at a time
 """
 
 prompt = ChatPromptTemplate.from_messages([
@@ -48,9 +55,8 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "{input}"),
 ])
 
-# Bind tools to the LLM and create the agent runnable
-llm_with_tools = llm.bind_tools(tools=[save_qa_tool])
-agent = prompt.partial(system_prompt=SYSTEM_PROMPT) | llm_with_tools
+
+agent = prompt.partial(system_prompt=SYSTEM_PROMPT) | llm
 
 # Wrap with memory/history
 agent_with_memory = RunnableWithMessageHistory(
@@ -68,7 +74,7 @@ def run_agent_turn(message: str, session_id: str, domain: str | None = None):
     # Inject domain into system prompt
     domain_text = session_domains.get(session_id, "general")
     print("Domain for session:", domain_text)
-    system_prompt = SYSTEM_PROMPT + f"\n\nYou are interviewing for the domain: {domain_text}. Keep all questions strictly within this domain."
+    system_prompt = SYSTEM_PROMPT.format(domain=domain) + f"\n\nYou are interviewing for the domain: {domain_text}. Keep all questions strictly within this domain."
     
     result = agent_with_memory.invoke(
         {
@@ -77,4 +83,5 @@ def run_agent_turn(message: str, session_id: str, domain: str | None = None):
         },
         config={"configurable": {"session_id": session_id}}
     )
+    print("Agent result:", result)
     return result.content

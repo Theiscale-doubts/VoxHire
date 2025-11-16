@@ -1,4 +1,5 @@
 import dotenv
+dotenv.load_dotenv()
 from typing import Dict, List, Any
 
 from langchain.tools import tool
@@ -11,7 +12,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI  # assuming this stays
 from tools import save_qa_tool
 
-dotenv.load_dotenv()
+
 
 # Initialize LLM model instance
 llm = ChatGoogleGenerativeAI(

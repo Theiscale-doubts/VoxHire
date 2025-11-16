@@ -5,9 +5,15 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import json
 import re
+credentials_json = os.getenv("google_credentials_json")
 
+if not credentials_json:
+    raise ValueError("Environment variable 'google_credentials_json' is missing!")
+
+credentials_dict = json.loads(credentials_json)
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scope)
+
 def add_values(new_row,username="Interview"):
   
     try: 

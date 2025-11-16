@@ -1,12 +1,18 @@
 import uuid
 import os
+import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from tools import extract_values
 from agent import run_agent_turn
 from tools import save_qa_tool, add_values
-import json
 from groq import Groq
 
 

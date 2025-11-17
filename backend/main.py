@@ -43,7 +43,9 @@ class SaveRequest(BaseModel):
     email: str | None = None,
     role: str | None = None,
 
-
+@app.get("/api/check")
+def start_chek():
+    return {"session": " API is working fine"}
 @app.get("/api/start")
 def start_session():
     session_id = str(uuid.uuid4())

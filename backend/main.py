@@ -109,38 +109,50 @@ async def get_interview_results(session_id: str) -> InterviewResult:
     
     prompt = f"""You are an expert technical interviewer evaluating a candidate's interview performance.
 
-            {transcript}
+{transcript}
 
-            Provide a concise evaluation in the following format:
+Provide a concise evaluation in the following format:
 
-            SCORE: [number between 0-10 with one decimal, e.g., 7.5]
+SCORE: [number between 0-10 with one decimal, e.g., 7.5]
 
-            FEEDBACK:
+FEEDBACK:
 
-            ## Overall Performance
-            [2-3 sentences summarizing the candidate's performance]
+## Overall Performance
+[2-3 sentences summarizing the candidate's performance]
 
-            ## Strengths
-            - [Strength 1]
-            - [Strength 2]
-            - [Strength 3]
+## Strengths
+- [Strength 1]
+- [Strength 2]
+- [Strength 3]
 
-            ## Areas for Improvement
-            - [Specific actionable improvement 1]
-            - [Specific actionable improvement 2]
-            - [Specific actionable improvement 3]
+## Areas for Improvement
+- [Specific actionable improvement 1]
+- [Specific actionable improvement 2]
+- [Specific actionable improvement 3]
 
-            ## Communication
-            [1-2 sentences on clarity, articulation, and engagement]
+## Communication ([score out of 100]%)
+[1-2 sentences on clarity, articulation, and engagement]
 
-            ## Technical Knowledge
-            [1-2 sentences on depth and accuracy of technical understanding]
+## Technical Knowledge ([score out of 100]%)
+[1-2 sentences on depth and accuracy of technical understanding]
 
-            ## Problem-Solving
-            [1-2 sentences on approach and methodology]
+## Problem-Solving ([score out of 100]%)
+[1-2 sentences on approach and methodology]
 
-            Keep each section brief and actionable. Use bullet points for lists. Be direct and constructive.
-            """
+EVALUATION GUIDELINES:
+- SCORE: Provide an overall score between 0-10 with one decimal place based on complete performance.
+- PERCENTAGES: Assign individual scores out of 100 for each category independently. Each percentage represents absolute performance in that specific area:
+  * 90-100%: Exceptional performance, demonstrates mastery
+  * 80-89%: Strong performance, shows solid competency
+  * 70-79%: Good performance, meets expectations
+  * 60-69%: Adequate performance, room for improvement
+  * 50-59%: Below expectations, needs significant improvement
+  * Below 50%: Poor performance, major gaps identified
+- Be STRICT and CRITICAL in your evaluation. Do not inflate scores.
+- Reference specific examples from the transcript to justify each score.
+- Scores should reflect actual demonstrated capability, not potential.
+- Keep each section brief and actionable. Use bullet points for lists. Be direct and constructive.
+"""
     
     client = Groq(api_key=Groq_api_key)
 

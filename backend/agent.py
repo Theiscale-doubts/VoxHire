@@ -1,6 +1,7 @@
 import dotenv
 dotenv.load_dotenv()
 from typing import Dict, List, Any
+import random
 
 from langchain.tools import tool
 from langchain.agents import create_agent
@@ -11,13 +12,16 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from tools import save_qa_tool
 
-# Initialize LLM model instance
+# Initialize LLM model instance with HIGHER temperature for more variety
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
-    temperature=0.7,
+    temperature=0.9,  # Increased from 0.7 for more variety
 )
 
 session_domains = {}
+session_topics_covered = {}  # NEW: Track covered topics per session
+session_question_count = {}  # NEW: Track question count
+
 # Session store for histories
 session_store: Dict[str, InMemoryChatMessageHistory] = {}
 
@@ -26,174 +30,169 @@ def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
         session_store[session_id] = InMemoryChatMessageHistory()
     return session_store[session_id]
 
-# Domain-specific question banks
+# Domain-specific question banks with topic tags
 DOMAIN_QUESTIONS = {
-    "datascience": """
-FOCUS AREAS FOR THIS INTERVIEW (8-10 questions total):
-- Statistics: distributions, hypothesis testing, p-values, confidence intervals, correlation vs causation
-- Machine Learning: supervised/unsupervised learning, model evaluation (accuracy, precision, recall, F1, ROC-AUC)
-- Feature engineering and feature selection techniques
-- Data preprocessing: handling missing data, outliers, scaling/normalization
-- A/B testing and experimental design
-- Model validation: cross-validation, train-test split, overfitting/underfitting
-- Python concepts: pandas, numpy, scikit-learn basics (NO code writing, concepts only)
-- Real-world scenarios: model deployment considerations, choosing right algorithms
-
-VARY your questions across these topics - don't focus on just one area. Mix statistics, ML concepts, and practical scenarios.
-""",
-    "hr(humain recourse) + managerial": """
-        FOCUS AREAS FOR THIS INTERVIEW (8-10 questions total):
-        You are conducting an HR interview for a candidate applying for a TECH role. Focus on behavioral, cultural fit, and soft skills assessment.
-
-        BEHAVIORAL QUESTIONS (Tell me about a time...):
-        - "Tell me about a time you faced a challenging project deadline. How did you handle it?"
-        - "Describe a situation where you had to work with a difficult team member"
-        - "Share an example of a technical project that failed. What did you learn?"
-        - "Tell me about a time you had to learn a new technology quickly"
-        - "Describe a situation where you disagreed with your manager or team"
-
-        SITUATIONAL QUESTIONS (What would you do if...):
-        - "You're assigned to a project with unclear requirements. How do you proceed?"
-        - "Your team is falling behind schedule. What steps would you take?"
-        - "You discover a critical bug right before deployment. What do you do?"
-        - "A colleague takes credit for your work. How do you handle it?"
-
-        SOFT SKILLS & CULTURAL FIT:
-        - "Why do you want to work here? What interests you about this role?"
-        - "How do you handle stress and pressure in a fast-paced environment?"
-        - "Describe your ideal work environment and team culture"
-        - "How do you prioritize your work when you have multiple urgent tasks?"
-        - "What motivates you in your career?"
-        - "Where do you see yourself in 3-5 years?"
-
-        TEAMWORK & COMMUNICATION:
-        - "How do you explain complex technical concepts to non-technical stakeholders?"
-        - "Describe your approach to giving and receiving feedback"
-        - "How do you collaborate with team members from different departments?"
-        - "Tell me about your experience working in Agile/Scrum teams"
-
-        STRENGTHS & DEVELOPMENT:
-        - "What are your greatest strengths as a tech professional?"
-        - "What areas are you currently working to improve?"
-        - "How do you stay updated with the latest technology trends?"
-
-        QUESTION STYLE:
-        - Ask open-ended questions that encourage storytelling
-        - Use follow-ups: "How did that make you feel?" "What was the outcome?" "What would you do differently?"
-        - Focus on SOFT SKILLS, not technical knowledge (no coding, algorithms, or technical concepts)
-        - Assess communication skills, teamwork, problem-solving approach, and cultural fit
-
-        VARY topics across behavioral situations, cultural fit, teamwork, and career goals. This is NOT a technical interview - focus on the person, not their code.
-        """,
-    "data analytics": """
-FOCUS AREAS FOR THIS INTERVIEW (8-10 questions total):
-- SQL: JOINs, aggregations, window functions, subqueries, query optimization
-- Data visualization: choosing right charts, dashboard design, storytelling with data
-- Business metrics: KPIs,funnel analysis
-- Data cleaning: handling missing values, duplicates, data quality checks
-- Tools: Excel/spreadsheets, Tableau/Power BI concepts
-- Exploratory Data Analysis (EDA) techniques
-- Python concepts: pandas operations, data manipulation (NO code writing, concepts only)
-- Reporting and stakeholder communication
-
-VARY your questions across SQL, visualization, business metrics, and data manipulation. Don't cluster similar topics together.
-""",
-    "product": """
-FOCUS AREAS FOR THIS INTERVIEW (8-10 questions total):
-- Product strategy and roadmap planning
-- User research and customer discovery methods
-- Prioritization frameworks (RICE, MoSCoW, Kano model)
-- Feature definition and writing user stories/requirements
-- Metrics and success measurement (AARRR, North Star metric)
-- Stakeholder management and cross-functional collaboration
-- A/B testing and experimentation
-- Product lifecycle management
-- Competitive analysis and market positioning
-- Data-driven decision making
-
-VARY your questions across strategy, execution, analytics, and stakeholder management. Mix conceptual and scenario-based questions.
-""",
-    "frontend": """
-FOCUS AREAS FOR THIS INTERVIEW (8-10 questions total):
-- HTML/CSS: semantic HTML, CSS layouts (flexbox, grid), responsive design
-- JavaScript fundamentals: ES6+ features, async/await, promises, closures
-- React/Vue/Angular concepts: component lifecycle, state management, hooks
-- Performance optimization: lazy loading, code splitting, bundle size
-- Web accessibility (a11y) and best practices
-- Browser APIs and DOM manipulation concepts
-- CSS preprocessors and styling approaches
-- Testing: unit tests, integration tests concepts
-- Python concepts: if used in full-stack context (NO code writing, concepts only)
-
-VARY your questions across HTML/CSS, JavaScript, frameworks, and performance. Balance fundamentals with advanced topics.
-""",
-    "devops": """
-FOCUS AREAS FOR THIS INTERVIEW (8-10 questions total):
-- CI/CD pipelines and automation concepts
-- Containerization: Docker concepts, container orchestration basics
-- Cloud platforms: AWS/Azure/GCP services overview
-- Infrastructure as Code (IaC): Terraform, CloudFormation concepts
-- Monitoring and logging: metrics, alerts, observability
-- Version control: Git workflows, branching strategies
-- Linux/Unix fundamentals and shell scripting concepts
-- Security: secrets management, access control, vulnerability scanning
-- Python concepts: automation scripts, DevOps tools (NO code writing, concepts only)
-- Incident management and troubleshooting approaches
-
-VARY your questions across infrastructure, automation, monitoring, and security. Mix technical concepts with practical scenarios.
-"""
+    "datascience": {
+        "topics": [
+            "Statistics (distributions, hypothesis testing, p-values, confidence intervals, correlation vs causation)",
+            "Machine Learning basics (supervised/unsupervised learning, model evaluation metrics)",
+            "Feature engineering and selection techniques",
+            "Data preprocessing (missing data, outliers, scaling/normalization)",
+            "A/B testing and experimental design",
+            "Model validation (cross-validation, overfitting/underfitting)",
+            "Python concepts (pandas, numpy, scikit-learn - concepts only, NO code writing)",
+            "Real-world ML scenarios (deployment, algorithm selection)"
+        ],
+        "sample_starters": [
+            "Explain the difference between Type I and Type II errors",
+            "How do you evaluate a classification model's performance?",
+            "What techniques would you use for feature selection?",
+            "How do you handle missing data in a dataset?",
+            "Explain the concept of overfitting and how to prevent it",
+            "What's the difference between correlation and causation?",
+            "How would you design an A/B test for a new feature?"
+        ]
+    },
+    "hr(humain recourse) + managerial": {
+        "topics": [
+            "Behavioral questions (challenging projects, difficult team members)",
+            "Situational scenarios (unclear requirements, falling behind schedule)",
+            "Soft skills and cultural fit",
+            "Teamwork and communication",
+            "Career goals and motivation",
+            "Strengths and development areas",
+            "Conflict resolution and feedback"
+        ],
+        "sample_starters": [
+            "Tell me about a time you had to learn a new technology quickly",
+            "How do you handle stress in a fast-paced environment?",
+            "Describe a situation where you disagreed with your manager",
+            "What motivates you in your career?",
+            "How do you explain technical concepts to non-technical stakeholders?",
+            "Tell me about a project that failed. What did you learn?",
+            "Why do you want to work here?"
+        ]
+    },
+    "data analytics": {
+        "topics": [
+            "SQL",
+            "Data visualization (chart selection, dashboard design, storytelling)",
+            "Business metrics (KPIs, funnel analysis)",
+            "Data cleaning (missing values, duplicates, quality checks)",
+            "Tools concepts (Excel, Tableau, Power BI)",
+            "Exploratory Data Analysis techniques",
+            "Python for data manipulation (pandas concepts - NO code writing)",
+            "Reporting and stakeholder communication"
+        ],
+        "sample_starters": [
+            "How do you choose the right visualization for different data types?",
+            "Explain window functions in SQL and when you'd use them",
+            "What KPIs would you track for an e-commerce website?",
+            "How do you handle duplicate records in a dataset?",
+            "Explain the difference between a dashboard and a report",
+            "What's your approach to exploratory data analysis?",
+            "How would you optimize a slow SQL query?"
+        ]
+    },
+    "product": {
+        "topics": [
+            "Product strategy and roadmap planning",
+            "User research and customer discovery",
+            "Prioritization frameworks (RICE, MoSCoW, Kano)",
+            "Feature definition and user stories",
+            "Metrics and success measurement",
+            "Stakeholder management",
+            "A/B testing and experimentation",
+            "Competitive analysis and market positioning"
+        ],
+        "sample_starters": [
+            "How do you prioritize features on a product roadmap?",
+            "Explain how you would conduct user research for a new feature",
+            "What metrics would you use to measure product success?",
+            "How do you handle conflicting stakeholder requirements?",
+            "Describe the RICE prioritization framework",
+            "How would you analyze a competitor's product?",
+            "What's your approach to writing user stories?"
+        ]
+    },
+    "frontend": {
+        "topics": [
+            "HTML/CSS (semantic HTML, flexbox, grid, responsive design)",
+            "JavaScript fundamentals (ES6+, async/await, closures)",
+            "React/Vue/Angular concepts (lifecycle, state, hooks)",
+            "Performance optimization (lazy loading, code splitting)",
+            "Web accessibility (a11y) best practices",
+            "Browser APIs and DOM manipulation",
+            "CSS approaches and preprocessors",
+            "Testing concepts (unit, integration)"
+        ],
+        "sample_starters": [
+            "Explain the difference between flexbox and CSS grid",
+            "How do React hooks improve upon class components?",
+            "What are the key principles of web accessibility?",
+            "How would you optimize the performance of a slow webpage?",
+            "Explain event bubbling and capturing",
+            "What's the difference between var, let, and const?",
+            "How do you ensure your website is responsive?"
+        ]
+    },
+    "devops": {
+        "topics": [
+            "CI/CD pipelines and automation",
+            "Containerization (Docker, orchestration basics)",
+            "Cloud platforms (AWS/Azure/GCP services)",
+            "Infrastructure as Code (Terraform, CloudFormation)",
+            "Monitoring and logging (metrics, alerts, observability)",
+            "Version control (Git workflows, branching)",
+            "Linux/Unix and shell scripting concepts",
+            "Security (secrets management, access control)",
+            "Incident management and troubleshooting"
+        ],
+        "sample_starters": [
+            "Explain the benefits of containerization",
+            "How would you set up a CI/CD pipeline?",
+            "What's the difference between monitoring and observability?",
+            "Describe Infrastructure as Code and its benefits",
+            "How do you manage secrets in a production environment?",
+            "Explain different Git branching strategies",
+            "How would you troubleshoot a production incident?"
+        ]
+    }
 }
 
 SYSTEM_PROMPT = """
-You are Synthia, an expert interviewer.
+You are Synthia, an expert interviewer conducting a {total_questions}-question interview.
 
-RULES:
-1) First message = introduction → Greet briefly + ask first domain question
-2) Ongoing → Evaluate their answer + ask ONE follow-up domain question
-3) ALWAYS respond in English, regardless of the language used by the user
-4) This interview will have 8-10 questions total - VARY the topics throughout
-
-STRICT DOMAIN ADHERENCE:
-- ONLY ask questions from the specified domain - NO EXCEPTIONS
-- NEVER ask questions from other domains, even if the user mentions related topics
-- If user discusses off-domain topics, acknowledge with ONE sentence and immediately redirect with a domain-specific question
-- Ignore off-domain content in user responses and stay focused on the domain
+CRITICAL VARIETY RULES:
+- This is question {current_question} of {total_questions}
+- You have already asked about: {covered_topics}
+- You MUST ask about a NEW topic that is NOT in the covered list above
+- NEVER repeat topics or ask similar questions to what's already been asked
+- Each question should explore a DIFFERENT area from the domain
 
 {domain_context}
 
-QUESTION VARIETY (CRITICAL):
-- Since there are only 8-10 questions total, VARY topics throughout the interview
-- Don't ask 3+ consecutive questions on the same topic
-- Rotate between different focus areas listed above
-- Example flow: SQL → Python concepts → Business Metrics → Visualization  → Data Cleaning
-- Mix difficulty levels: start basic → gradually increase → end with practical scenario
-
-QUESTION TYPES:
-- Mix of practical AND conceptual questions
-- For Python: Ask CONCEPTS ONLY (e.g., "Explain how pandas merge works" or "What's the difference between list and tuple?")
-- NEVER ask to write code - NO "Write code to..." or "Implement..." questions
-- Examples:
-  * Conceptual: "What's the difference between..."
-  * Practical: "How would you handle a situation where..."
-  * Python concepts: "Explain how [concept] works in Python"
+TOPIC ROTATION MANDATE:
+- Deliberately choose topics you HAVEN'T covered yet
+- If you've asked about SQL JOINs, move to visualization or business metrics
+- If you've asked about React hooks, move to CSS or performance
+- Space out related topics - don't cluster similar subjects together
 
 QUESTION STYLE:
 - Keep questions SHORT and DIRECT (1-2 sentences maximum)
-- No lengthy explanations or context in your questions
 - Ask ONE specific thing at a time
-- Avoid overly complex scenarios
+- For Python: CONCEPTS ONLY - NO code writing requests
+- Mix conceptual and practical questions
+- Gradually increase difficulty as interview progresses
 
-Example GOOD questions:
-- "What's the difference between INNER JOIN and LEFT JOIN?"
-- "How do you prioritize features in a product roadmap?"
-- "Explain what a p-value represents."
-- "What are the benefits of containerization?"
+EXAMPLES OF GOOD VARIETY this is only for exampledont just folow the exact flow :
+Question 1: SQL JOINs → Question 2: Data visualization → Question 3: Business metrics → Question 4: Python pandas concepts
 
-Example BAD questions (too long/complex):
-- "Imagine you're working at a company with millions of users across 50 countries, and you need to redesign the entire user experience while maintaining backward compatibility and ensuring zero downtime. How would you approach this?"
+LANGUAGE: Always communicate in English only.
 
-LANGUAGE REQUIREMENT:
-Always communicate in English only.
+RESPONSE FORMAT:
+1. Brief evaluation of their previous answer (if applicable)
+2. ONE new question from an UNCOVERED topic area
 """
 
 prompt = ChatPromptTemplate.from_messages([
@@ -213,20 +212,50 @@ agent_with_memory = RunnableWithMessageHistory(
 )
 
 def run_agent_turn(message: str, session_id: str, domain: str | None = None):
-    # Store domain for session
+    # Initialize session tracking
     if session_id not in session_domains and domain:
         session_domains[session_id] = domain
+        session_topics_covered[session_id] = []
+        session_question_count[session_id] = 0
 
     # Get domain for this session
     domain_text = session_domains.get(session_id, "general")
     print("Domain for session:", domain_text)
     
-    # Get domain-specific context
-    domain_context = DOMAIN_QUESTIONS.get(domain_text.lower(), "")
+    # Increment question count
+    session_question_count[session_id] += 1
+    current_q = session_question_count[session_id]
     
-    # Create system prompt with domain context
-    system_prompt = SYSTEM_PROMPT.format(domain_context=domain_context)
-    system_prompt += f"\n\nYou are interviewing for the domain: {domain_text}. Keep all questions strictly within this domain."
+    # Get domain-specific context
+    domain_info = DOMAIN_QUESTIONS.get(domain_text.lower(), {})
+    topics_list = domain_info.get("topics", [])
+    
+    # Build domain context with available topics
+    domain_context = f"AVAILABLE TOPICS FOR {domain_text.upper()}:\n"
+    for i, topic in enumerate(topics_list, 1):
+        domain_context += f"{i}. {topic}\n"
+    
+    # Add some starter questions for inspiration (randomized)
+    sample_starters = domain_info.get("sample_starters", [])
+    if sample_starters:
+        random_samples = random.sample(sample_starters, min(3, len(sample_starters)))
+        domain_context += f"\nEXAMPLE QUESTIONS (for inspiration, vary your wording):\n"
+        for sample in random_samples:
+            domain_context += f"- {sample}\n"
+    
+    # Track covered topics
+    covered = session_topics_covered.get(session_id, [])
+    covered_str = ", ".join(covered) if covered else "None yet"
+    
+    # Create system prompt with session context
+    system_prompt = SYSTEM_PROMPT.format(
+        domain_context=domain_context,
+        covered_topics=covered_str,
+        current_question=current_q,
+        total_questions="8-10"
+    )
+    
+    system_prompt += f"\n\nSTRICT DOMAIN: {domain_text}. Ask ONLY {domain_text} questions. Ignore off-topic responses."
     
     result = agent_with_memory.invoke(
         {
@@ -235,6 +264,17 @@ def run_agent_turn(message: str, session_id: str, domain: str | None = None):
         },
         config={"configurable": {"session_id": session_id}}
     )
-    print("Agent result:", result)
-    print(system_prompt)
+    
+    # Extract topic from result and add to covered topics (simple heuristic)
+    # You might want to enhance this with more sophisticated topic extraction
+    result_text = result.content.lower()
+    for topic in topics_list:
+        topic_keywords = topic.split('(')[0].strip().lower()
+        if any(keyword in result_text for keyword in topic_keywords.split()):
+            if topic not in covered:
+                session_topics_covered[session_id].append(topic.split('(')[0].strip())
+                break
+    
+    print(f"Question {current_q}: Covered topics so far: {session_topics_covered[session_id]}")
+    
     return result.content

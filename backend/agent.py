@@ -89,7 +89,7 @@ VARY your questions across these topics - don't focus on just one area. Mix stat
 FOCUS AREAS FOR THIS INTERVIEW (8-10 questions total):
 - SQL: JOINs, aggregations, window functions, subqueries, query optimization
 - Data visualization: choosing right charts, dashboard design, storytelling with data
-- Business metrics: KPIs, conversion rates, customer analytics, funnel analysis
+- Business metrics: KPIs,funnel analysis
 - Data cleaning: handling missing values, duplicates, data quality checks
 - Tools: Excel/spreadsheets, Tableau/Power BI concepts
 - Exploratory Data Analysis (EDA) techniques
@@ -165,7 +165,7 @@ QUESTION VARIETY (CRITICAL):
 - Since there are only 8-10 questions total, VARY topics throughout the interview
 - Don't ask 3+ consecutive questions on the same topic
 - Rotate between different focus areas listed above
-- Example flow: SQL → Business Metrics → Visualization → Python concepts → Data Cleaning
+- Example flow: SQL → Python concepts → Business Metrics → Visualization  → Data Cleaning
 - Mix difficulty levels: start basic → gradually increase → end with practical scenario
 
 QUESTION TYPES:

@@ -2,6 +2,7 @@ import dotenv
 dotenv.load_dotenv()
 from typing import Dict, List, Any
 import random
+from langchain_groq import ChatGroq
 
 from langchain.tools import tool
 from langchain.agents import create_agent

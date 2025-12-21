@@ -13,11 +13,14 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from tools import save_qa_tool
 
 # Initialize LLM model instance with HIGHER temperature for more variety
-llm = ChatGoogleGenerativeAI(
+google_llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
-    temperature=0.9,  # Increased from 0.7 for more variety
+    temperature=0.9,
 )
-
+groq_llm = ChatGroq(
+    model="groq/compound",  # or 8b if you want faster
+    temperature=0.9,
+)
 session_domains = {}
 session_topics_covered = {}  # NEW: Track covered topics per session
 session_question_count = {}  # NEW: Track question count
@@ -226,16 +229,48 @@ prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{input}"),
 ])
-
-agent = prompt | llm
+google_agent = prompt | google_llm
+groq_agent = prompt | groq_llm
 
 # Wrap with memory/history
-agent_with_memory = RunnableWithMessageHistory(
-    agent,
+google_agent_with_memory = RunnableWithMessageHistory(
+    google_agent,
     get_session_history,
     input_messages_key="input",
     history_messages_key="chat_history",
 )
+
+groq_agent_with_memory = RunnableWithMessageHistory(
+    groq_agent,
+    get_session_history,
+    input_messages_key="input",
+    history_messages_key="chat_history",
+)
+def safe_invoke_agent(payload, session_id):
+    try:
+        # Try Google first
+        return google_agent_with_memory.invoke(
+            payload,
+            config={"configurable": {"session_id": session_id}}
+        )
+    
+    except Exception as e:
+        error_msg = str(e).lower()
+        
+        # Detect rate limit / quota errors
+        if any(k in error_msg for k in [
+            "quota", "rate limit", "resource exhausted", "429"
+        ]):
+            print("⚠️ Google LLM limit exceeded. Switching to Groq...")
+            
+            return groq_agent_with_memory.invoke(
+                payload,
+                config={"configurable": {"session_id": session_id}}
+            )
+        
+        # If it's some other error, raise it
+        raise e
+
 
 def run_agent_turn(message: str, session_id: str, domain: str | None = None):
     # Initialize session tracking
@@ -283,13 +318,14 @@ def run_agent_turn(message: str, session_id: str, domain: str | None = None):
     
     system_prompt += f"\n\nSTRICT DOMAIN: {domain_text}. Ask ONLY {domain_text} questions. Ignore off-topic responses."
     
-    result = agent_with_memory.invoke(
-        {
-            "input": message,
-            "system_prompt": system_prompt
-        },
-        config={"configurable": {"session_id": session_id}}
+    result = safe_invoke_agent(
+    {
+        "input": message,
+        "system_prompt": system_prompt
+    },
+    session_id=session_id
     )
+
     
     # Extract topic from result and add to covered topics (simple heuristic)
     # You might want to enhance this with more sophisticated topic extraction

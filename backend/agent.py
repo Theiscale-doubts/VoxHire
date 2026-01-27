@@ -77,27 +77,60 @@ DOMAIN_QUESTIONS = {
             "Why do you want to work here?"
         ]
     },
-    "data analytics": {
-        "topics": [
-            "SQL",
-            "Data visualization (chart selection, dashboard design, storytelling)",
-            "Business metrics (KPIs, funnel analysis)",
-            "Data cleaning (missing values, duplicates, quality checks)",
-            "Tools concepts (Excel, Tableau, Power BI)",
-            "Exploratory Data Analysis techniques",
-            "Python for data manipulation (pandas concepts - NO code writing)",
-            "Reporting and stakeholder communication"
-        ],
-        "sample_starters": [
-            "How do you choose the right visualization for different data types?",
-            "Explain window functions in SQL and when you'd use them",
-            "What KPIs would you track for an e-commerce website?",
-            "How do you handle duplicate records in a dataset?",
-            "Explain the difference between a dashboard and a report",
-            "What's your approach to exploratory data analysis?",
-            "How would you optimize a slow SQL query?"
-        ]
-    },
+    "data_analytics": {
+    "topics": [
+        "SQL fundamentals (SELECT, WHERE, JOIN types, GROUP BY, aggregations)",
+        "Advanced SQL (subqueries, CTEs, window functions, CASE statements, query optimization)",
+        "Data visualization principles (chart selection, chart types for different data, color theory, accessibility)",
+        "Dashboard design (layout, hierarchy, interactivity, KPI placement, dashboard vs report)",
+        "Data storytelling (narrative structure, audience adaptation, actionable insights, executive communication)",
+        "Business metrics and KPIs (CAC, churn rate, LTV, conversion rates, retention metrics)",
+        "Funnel analysis (drop-off identification, conversion optimization, user journey mapping)",
+        "A/B testing and experimentation (statistical significance, sample size, hypothesis testing)",
+        "Data cleaning techniques (handling missing values, outlier detection, duplicate removal strategies)",
+        "Data quality frameworks (accuracy, completeness, consistency, timeliness, validation checks)",
+        "Excel concepts (formulas, pivot tables, VLOOKUP/XLOOKUP, conditional formatting, data analysis)",
+        "Tableau concepts (calculated fields, parameters, filters, actions, LOD expressions)",
+        "Power BI principles (DAX basics, relationships, data modeling, measures vs columns)",
+        "Exploratory Data Analysis techniques (distributions, correlations, patterns, summary statistics)",
+        "Statistical concepts for analysts (mean, median, mode, standard deviation, percentiles, variance)",
+        "Data segmentation and cohort analysis",
+        "Pandas concepts for data manipulation (DataFrames, filtering, grouping, merging - conceptual understanding ONLY, NO code writing)",
+        "Data transformation principles (pivoting, melting, aggregating, reshaping)",
+        "Reporting best practices (executive summaries, formatting, clarity, actionability)",
+        "Stakeholder communication (translating technical findings, managing expectations, presenting insights)",
+        "Data ethics and privacy (GDPR basics, PII handling, anonymization, responsible analytics)",
+        "Data warehousing concepts (fact tables, dimension tables, star schema, snowflake schema)",
+        "ETL/ELT pipeline concepts (data flow, transformations, loading strategies)",
+        "Real-world business scenarios (e-commerce analytics, marketing attribution, product analytics, customer behavior)"
+    ],
+    
+    "important_note": [
+        "The topics above and below list are NOT meant to be followed sequentially. Randomize topic selection for each question to ensure variety and prevent repetition. Mix difficulty levels and question formats unpredictably.",
+    ],
+    "sample_starters": [
+        "How do you choose the right visualization for different data types?",
+        "Explain window functions in SQL and when you'd use them",
+        "What KPIs would you track for an e-commerce website?",
+        "How do you handle duplicate records in a dataset?",
+        "Explain the difference between a dashboard and a report",
+        "What's your approach to exploratory data analysis?",
+        "How would you optimize a slow SQL query?",
+        "When would you use a LEFT JOIN vs an INNER JOIN in SQL?",
+        "How do you identify and handle outliers in your data?",
+        "What metrics would you use to measure customer retention?",
+        "Explain how you would present technical findings to non-technical stakeholders",
+        "How do you ensure data quality in your analysis?",
+        "What's the difference between a measure and a dimension in BI tools?",
+        "Describe your process for cleaning a messy dataset",
+        "How would you design a dashboard for executive leadership?",
+        "What statistical concepts are most important for data analysts?",
+        "How do you handle missing values in different scenarios?",
+        "Explain the concept of a data warehouse and its components",
+        "What's your approach to A/B test analysis?",
+        "How would you explain customer lifetime value to a marketing team?"
+    ]
+   },
     "product": {
         "topics": [
             "Product strategy and roadmap planning",

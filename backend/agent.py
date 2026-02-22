@@ -148,27 +148,6 @@ DOMAIN_QUESTIONS = {
             "What's your approach to writing user stories?"
         ]
     },
-    "frontend": {
-        "topics": [
-            "HTML/CSS (semantic HTML, flexbox, grid, responsive design)",
-            "JavaScript fundamentals (ES6+, async/await, closures)",
-            "React/Vue/Angular concepts (lifecycle, state, hooks)",
-            "Performance optimization (lazy loading, code splitting)",
-            "Web accessibility (a11y) best practices",
-            "Browser APIs and DOM manipulation",
-            "CSS approaches and preprocessors",
-            "Testing concepts (unit, integration)"
-        ],
-        "sample_starters": [
-            "Explain the difference between flexbox and CSS grid",
-            "How do React hooks improve upon class components?",
-            "What are the key principles of web accessibility?",
-            "How would you optimize the performance of a slow webpage?",
-            "Explain event bubbling and capturing",
-            "What's the difference between var, let, and const?",
-            "How do you ensure your website is responsive?"
-        ]
-    },
     "devops": {
         "topics": [
             "CI/CD pipelines and automation",

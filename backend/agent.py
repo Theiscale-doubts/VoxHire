@@ -98,7 +98,7 @@ DOMAIN_QUESTIONS = {
             "How do you approach working with AI-assisted tools while maintaining trust in the output?",
             "Describe a situation where data governance or privacy considerations shaped how you delivered a solution",
             "Tell me about a time you had to align multiple stakeholders on a single definition of a metric",
-            "How do you handle a situation where the data tells a story the business doesn't want to hear?
+            "How do you handle a situation where the data tells a story the business doesn't want to hear?"
         ]
     },
     "data_analytics": {

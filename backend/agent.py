@@ -65,7 +65,20 @@ DOMAIN_QUESTIONS = {
             "Teamwork and communication",
             "Career goals and motivation",
             "Strengths and development areas",
-            "Conflict resolution and feedback"
+            "Conflict resolution and feedback",
+            "Translating data findings to non-technical stakeholders",
+            "Managing competing priorities across business units",
+            "Handling vague or changing reporting requirements",
+            "Data quality ownership and trust building",
+            "Stakeholder pushback on data interpretation",
+            "Self-service analytics adoption and enablement",
+            "Ethics and responsible use of data",
+            "Privacy awareness and data governance mindset",
+            "AI-assisted tools and knowing when to trust automation",
+            "Staying current in a fast-changing analytics landscape",
+            "Cross-functional collaboration with engineering and product teams",
+            "Agile and iterative ways of working in analytics delivery",
+            "Growth mindset and continuous learning in data roles"
         ],
         "sample_starters": [
             "Tell me about a time you had to learn a new technology quickly",
@@ -74,7 +87,18 @@ DOMAIN_QUESTIONS = {
             "What motivates you in your career?",
             "How do you explain technical concepts to non-technical stakeholders?",
             "Tell me about a project that failed. What did you learn?",
-            "Why do you want to work here?"
+            "Why do you want to work here?",
+            "Tell me about a time a stakeholder didn't trust your data. How did you handle it?",
+            "How do you prioritize when multiple teams are requesting analytics support at the same time?",
+            "Describe a situation where you had to push back on how data was being interpreted or presented",
+            "Tell me about a time you had to work with incomplete or messy data under a deadline",
+            "How do you stay current with changes in the analytics and BI landscape?",
+            "Describe a time you had to balance speed of delivery with data accuracy",
+            "Tell me about a time you helped a non-technical team become more data-driven",
+            "How do you approach working with AI-assisted tools while maintaining trust in the output?",
+            "Describe a situation where data governance or privacy considerations shaped how you delivered a solution",
+            "Tell me about a time you had to align multiple stakeholders on a single definition of a metric",
+            "How do you handle a situation where the data tells a story the business doesn't want to hear?
         ]
     },
     "data_analytics": {
@@ -147,89 +171,32 @@ DOMAIN_QUESTIONS = {
             "How would you analyze a competitor's product?",
             "What's your approach to writing user stories?"
         ]
-    },
-    "devops": {
-        "topics": [
-            "CI/CD pipelines and automation",
-            "Containerization (Docker, orchestration basics)",
-            "Cloud platforms (AWS/Azure/GCP services)",
-            "Infrastructure as Code (Terraform, CloudFormation)",
-            "Monitoring and logging (metrics, alerts, observability)",
-            "Version control (Git workflows, branching)",
-            "Linux/Unix and shell scripting concepts",
-            "Security (secrets management, access control)",
-            "Incident management and troubleshooting"
-        ],
-        "sample_starters": [
-            "Explain the benefits of containerization",
-            "How would you set up a CI/CD pipeline?",
-            "What's the difference between monitoring and observability?",
-            "Describe Infrastructure as Code and its benefits",
-            "How do you manage secrets in a production environment?",
-            "Explain different Git branching strategies",
-            "How would you troubleshoot a production incident?"
-        ]
     }
 }
 
 SYSTEM_PROMPT = """
-You are Synthia, an expert interviewer conducting a {total_questions}-question interview.
+You are Synthia, an expert interviewer conducting a {total_questions}-question interview for a {domain_context} role.
+Context
 
-ABSOLUTE RULES FOR VARIETY AND FLOW:
+Current question: {current_question} of {total_questions}
+Topics already covered: {covered_topics}
 
-1. The FIRST QUESTION of the entire interview MUST NOT be:
-   - SQL joins
-   - ANY SQL concept at all
-   - ANY repetitive or overused starter question common in DA interviews
-   Instead, pick a high-level, conceptual, or business-oriented topic.
+Topic Rules:
+Never repeat or revisit a covered topic
+Q1 must be high-level, conceptual, or business-oriented — never SQL, never a cliché DA opener
+Delay SQL until Q3 at the earliest; when SQL appears, start with window functions, query optimization, or reasoning-based questions — never joins by default
+Rotate across: data visualization → business metrics → data cleaning → EDA → Excel/Power BI → stakeholder communication → SQL (later)
 
-2. This is question {current_question} of {total_questions}.
-   You have already asked about: {covered_topics}
+Question Style:
+One concept per question, 1–2 sentences max
+Mix conceptual and practical; increase difficulty gradually
+Python: concepts only, no code
 
-3. You MUST ask about a NEW topic that is NOT in the covered list above.
-   NEVER repeat topics or ask similar questions to what has already been asked.
+Response Format:
+Brief evaluation of their previous answer (skip on Q1)
+One new question from an uncovered topic
 
-4. Each question must explore a DIFFERENT domain sub-topic.
-
-TOPIC ROTATION PRIORITY (IMPORTANT):
-- For DATA ANALYTICS, avoid SQL entirely until at least Question 3 or 4.
-- Rotate between:
-  * data visualization
-  * business metrics
-  * data cleaning
-  * EDA
-  * Excel or Power BI concepts
-  * stakeholder communication
-  * ONLY later go into SQL window functions / optimization / joins.
-
-STRICT RULE:  
-Even when later asking SQL questions, DO NOT ask joins by default.  
-When SQL is needed, begin with:
-- window functions
-- analytical functions
-- query optimization
-- thinking-based SQL questions  
-NOT joins.
-
-QUESTION STYLE RULES:
-- Keep each question short and direct (1–2 sentences).
-- Ask ONE specific concept or scenario at a time.
-- For Python: concepts only, NO coding.
-- Mix conceptual + practical questions.
-- Increase difficulty gradually as interview progresses.
-
-DOMAIN CONTEXT:
-{domain_context}
-
-EXAMPLE OF A GOOD FLOW (don’t copy exact questions):
-- Q1: Visualization → Q2: Business metrics → Q3: Data cleaning → Q4: EDA → Q5: Python concepts → Q6: SQL window functions (NOT joins)
-
-LANGUAGE:
-Always communicate in English.
-
-RESPONSE FORMAT:
-1. Brief evaluation of their previous answer (if applicable)
-2. ONE new question from an UNCOVERED topic area
+Language: English only.
 
 """
 
